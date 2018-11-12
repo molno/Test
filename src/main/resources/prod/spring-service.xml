@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:aop="http://www.springframework.org/schema/aop"
+       xmlns:tx="http://www.springframework.org/schema/tx"
+       xmlns:util="http://www.springframework.org/schema/util"
+       xsi:schemaLocation="
+		http://www.springframework.org/schema/beans
+		http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/context
+		http://www.springframework.org/schema/context/spring-context.xsd
+		http://www.springframework.org/schema/aop
+		http://www.springframework.org/schema/aop/spring-aop.xsd
+		http://www.springframework.org/schema/tx
+		http://www.springframework.org/schema/tx/spring-tx.xsd
+		http://www.springframework.org/schema/util
+        http://www.springframework.org/schema/util/spring-util-3.0.xsd">
+
+
+    <!-- 自动扫描bean -->
+    <context:component-scan base-package="com.battery.bean"/>
+
+    <!--扫描service包(包含子包)下所有使用注解的类型-->
+    <context:component-scan base-package="com.battery.service"/>
+
+    <import resource="spring-dao.xml"></import>
+    <!-- 配置事务管理器,管理数据源事务处理-->
+    <bean id="transactionManager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+        <property name="dataSource" ref="dataSource"/>
+    </bean>
+
+    <!--配置基于注解的声明式事务,默认使用注解来管理事务行为-->
+    <tx:annotation-driven transaction-manager="transactionManager"/>
+
+    <!-- 配置事务通知 -->
+    <tx:advice id="advice" transaction-manager="transactionManager">
+        <tx:attributes>
+            <!-- 默认只处理运行时异常，可加rollback-for="Exception/Throwable"等处理所有异常或包括错误-->
+            <!-- 传播行为 -->
+            <tx:method name="save*" propagation="REQUIRED" rollback-for="Exception"/>
+            <tx:method name="insert*" propagation="REQUIRED" rollback-for="Exception"/>
+            <tx:method name="add*" propagation="REQUIRED" rollback-for="Exception"/>
+            <tx:method name="create*" propagation="REQUIRED" rollback-for="Exception"/>
+            <tx:method name="delete*" propagation="REQUIRED" rollback-for="Exception"/>
+            <tx:method name="update*" propagation="REQUIRED" rollback-for="Exception"/>
+            <tx:method name="find*" propagation="SUPPORTS" read-only="true" rollback-for="Exception"/>
+            <tx:method name="select*" propagation="SUPPORTS" read-only="true" rollback-for="Exception"/>
+            <tx:method name="get*" propagation="SUPPORTS" read-only="true" rollback-for="Exception"/>
+        </tx:attributes>
+    </tx:advice>
+    <!--&lt;!&ndash; 配置切面织入的范围,后边要把事务边界定在service层 &ndash;&gt;-->
+    <aop:config>
+        <aop:pointcut id="serviceMethod" expression="execution(* com.battery.service..*.*(..))"/>
+        <aop:advisor advice-ref="advice" pointcut-ref="serviceMethod"/>
+    </aop:config>
+
+    <!--<task:scheduled-tasks>-->
+    <!--&lt;!&ndash;8小时清理一次未确认订单&ndash;&gt;-->
+    <!--<task:scheduled ref="timerServiceImpl" method="comfirmGoods" cron="0 0 3 * *  ? " />-->
+    <!--</task:scheduled-tasks>-->
+
+</beans>

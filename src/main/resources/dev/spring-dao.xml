@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+        http://www.springframework.org/schema/beans/spring-beans.xsd
+        http://www.springframework.org/schema/context
+        http://www.springframework.org/schema/context/spring-context.xsd"
+>
+
+    <!--配置整合mybatis过程-->
+
+    <!--1、配置数据库相关参数-->
+    <context:property-placeholder location="classpath:jdbc.properties" ignore-unresolvable="true"/>
+
+    <!--2.数据源druid -->
+    <bean id="dataSource" class="com.alibaba.druid.pool.DruidDataSource"
+          init-method="init" destroy-method="close">
+        <property name="driverClassName" value="${jdbc.driverClassName}"/>
+        <property name="url" value="${jdbc.url}"/>
+        <property name="username" value="${jdbc.username}"/>
+        <property name="password" value="${jdbc.password}"/>
+
+        <!-- 配置初始化大小、最小、最大 -->
+        <property name="initialSize" value="${druid.pool.size.init}"/>
+        <property name="minIdle" value="${druid.pool.size.min}"/>
+        <property name="maxActive" value="${druid.pool.size.max}"/>
+
+        <!-- 配置监控统计拦截的filters，wall用于防止sql注入，stat用于统计分析 -->
+        <!-- 参考：https://blog.csdn.net/chenleixing/article/details/45165753 -->
+        <property name="filters" value="wall,stat"/>
+    </bean>
+
+
+    <!--3、此为 Mybatis-plus 配置-->
+    <bean id="sqlSessionFactory"
+          class="com.baomidou.mybatisplus.spring.MybatisSqlSessionFactoryBean">
+        <property name="dataSource" ref="dataSource"/>
+        <property name="configLocation" value="classpath:mybatis-config.xml"/>
+        <property name="typeAliasesPackage" value="com.battery.entity"/>
+        <property name="mapperLocations" value="classpath:mapper/*.xml"/>
+        <!-- MP 全局配置注入 -->
+        <property name="globalConfig" ref="globalConfig"/>
+
+        <!-- 分页插件 参考 https://blog.csdn.net/a944750471/article/details/77949589 -->
+        <property name="plugins">
+            <array>
+                <bean class="com.github.pagehelper.PageHelper">
+                    <property name="properties">
+                        <value>
+                            dialect=mysql
+                            offsetAsPageNum=true
+                            rowBoundsWithCount=true
+                            pageSizeZero=true
+                            reasonable=false
+                            supportMethodsArguments=false
+                            returnPageInfo=none
+                        </value>
+                    </property>
+                </bean>
+            </array>
+        </property>
+
+    </bean>
+
+    <!-- 定义 MP 全局策略 -->
+    <bean id="globalConfig" class="com.baomidou.mybatisplus.entity.GlobalConfiguration">
+
+        <!-- 主键策略配置 -->
+        <!-- 可选参数
+                AUTO->`0`("数据库ID自增")
+                INPUT->`1`(用户输入ID")
+                ID_WORKER->`2`("全局唯一ID")
+                UUID->`3`("全局唯一ID")
+            -->
+        <property name="idType" value="0"/>
+        <!-- 数据库类型配置 -->
+        <!-- 可选参数（默认mysql）
+                MYSQL->`mysql`
+                ORACLE->`oracle`
+                DB2->`db2`
+                H2->`h2`
+                HSQL->`hsql`
+                SQLITE->`sqlite`
+                POSTGRE->`postgresql`
+                SQLSERVER2005->`sqlserver2005`
+                SQLSERVER->`sqlserver`
+            -->
+        <!--<property name="dbType" value="oracle"/>-->
+
+        <!-- 全局表为下划线命名设置 -->
+        <!--<property name="dbColumnUnderline" value="true"/>-->
+    </bean>
+
+    <!--4、DAO接口所在包名，Spring会自动查找其下的类 -->
+    <bean id="mapperScannerConfigurer" class="org.mybatis.spring.mapper.MapperScannerConfigurer">
+        <property name="basePackage" value="com.battery.mapper"/>
+    </bean>
+
+</beans>
